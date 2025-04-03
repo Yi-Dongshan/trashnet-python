@@ -1,32 +1,37 @@
 import os
 import constants
 import numpy as np
-from scipy import misc, ndimage
+from PIL import Image
 
 def resize(image, dim1, dim2):
-	return misc.imresize(image, (dim1, dim2))
+    return image.resize((dim2, dim1), Image.LANCZOS)
 
 def fileWalk(directory, destPath):
-	try: 
-		os.makedirs(destPath)
-	except OSError:
-		if not os.path.isdir(destPath):
-			raise
+    try: 
+        os.makedirs(destPath)
+    except OSError:
+        if not os.path.isdir(destPath):
+            raise
 
-	for subdir, dirs, files in os.walk(directory):
-		for file in files:
-			if len(file) <= 4 or file[-4:] != '.jpg':
-				continue
+    for subdir, dirs, files in os.walk(directory):
+        for file in files:
+            if len(file) <= 4 or file[-4:] != '.jpg':
+                continue
 
-			pic = misc.imread(os.path.join(subdir, file))
-			dim1 = len(pic)
-			dim2 = len(pic[0])
-			if dim1 > dim2:
-				pic = np.rot90(pic)
+            # 使用 PIL 打开图片
+            pic = Image.open(os.path.join(subdir, file))
+            # 转换为 numpy 数组以进行旋转操作
+            pic_array = np.array(pic)
+            dim1 = pic_array.shape[0]
+            dim2 = pic_array.shape[1]
+            
+            if dim1 > dim2:
+                pic_array = np.rot90(pic_array)
+                pic = Image.fromarray(pic_array)
 
-			picResized = resize(pic,constants.DIM1, constants.DIM2)
-			misc.imsave(os.path.join(destPath, file), picResized)
-		
+            # 调整图片大小并保存
+            picResized = resize(pic, constants.DIM1, constants.DIM2)
+            picResized.save(os.path.join(destPath, file), quality=95)
 
 def main():
 	prepath = os.path.join(os.getcwd(), 'dataset-original')
